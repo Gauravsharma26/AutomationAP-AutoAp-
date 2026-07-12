@@ -1,0 +1,9 @@
+Acme Supplies
+123 Business Rd
+Invoice: INV-5005
+Date: 10 July 2026
+Terms: Net 30
+
+1x Annual Support Contract — $2400.00
+
+Amount payable: $2400.00

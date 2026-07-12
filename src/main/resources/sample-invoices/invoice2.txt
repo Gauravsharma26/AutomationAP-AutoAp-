@@ -1,0 +1,10 @@
+BILL TO: Bright Logistics Inc.
+Date of Invoice: June 15, 2026
+Ref #: BL-8842
+Payment Due: July 15, 2026
+
+Description: Freight services for June shipment
+Qty: 1
+Rate: $4500.00
+
+Amount Due: $4500.00

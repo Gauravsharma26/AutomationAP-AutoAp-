@@ -1,0 +1,11 @@
+Invoice
+Vendor: Acme Supplies
+Invoice Number: INV-2001
+Invoice Date: 2026-06-10
+Due Date: 2026-07-10
+
+Line Items:
+1. Office Chairs x10 @ $150.00
+2. Desk Lamps x5 @ $40.00
+
+Total Amount: $1700.00

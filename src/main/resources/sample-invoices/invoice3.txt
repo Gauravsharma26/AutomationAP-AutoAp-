@@ -1,0 +1,9 @@
+Invoice #INV-3003
+From: Acme Supplies
+Date: 2026-06-20
+
+Item: Monthly software license
+Quantity: 1
+Price: $299.00
+
+Total: $299.00

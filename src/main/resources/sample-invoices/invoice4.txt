@@ -1,0 +1,12 @@
+=== INVOICE ===
+Vendor Name: Bright Logistics
+Inv No: BL-9001
+Issued: 2026/06/25
+Due: 2026/07/25
+
+Items:
+- Pallet handling (x20) - $12.50 each
+- Storage fee (x1) - $300.00
+- Fuel surcharge (x1) - $85.00
+
+TOTAL: $840.00
