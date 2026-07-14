@@ -2,6 +2,7 @@ package com.gaurav.autoap.service;
 
 
 import com.gaurav.autoap.agent.ExtractionAgent;
+import com.gaurav.autoap.agent.ValidationAgent;
 import com.gaurav.autoap.model.*;
 import com.gaurav.autoap.service.AuditService;
 import com.gaurav.autoap.service.StubDecisionService;
@@ -12,18 +13,18 @@ import org.springframework.stereotype.Service;
 public class InvoiceOrchestrator {
 
     private final ExtractionAgent extractionAgent;
-    private final StubValidationService validationService;
+    private final ValidationAgent validationAgent;
     private final StubDecisionService decisionService;
     private final AuditService auditService;
 
     public InvoiceOrchestrator(
             ExtractionAgent extractionAgent,
-            StubValidationService validationService,
+            ValidationAgent validationAgent,
             StubDecisionService decisionService,
             AuditService auditService
     ) {
         this.extractionAgent = extractionAgent;
-        this.validationService = validationService;
+        this.validationAgent = validationAgent;
         this.decisionService = decisionService;
         this.auditService = auditService;
     }
@@ -52,7 +53,7 @@ public class InvoiceOrchestrator {
         }
 
         // --- Validation step (stubbed for now) ---
-        ValidationResult validationResult = validationService.validate(invoiceData);
+        ValidationResult validationResult = validationAgent.validate(invoiceData);
         invoiceCase.setValidationResult(validationResult);
 
         // --- Decision step (stubbed for now) ---
