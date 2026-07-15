@@ -33,7 +33,7 @@ public class DataSeeder implements CommandLineRunner {
         poRepo.save(new PurchaseOrder("PO-1002", v2, new BigDecimal("4500.00"), LocalDate.of(2026, 6, 5)));
         poRepo.save(new PurchaseOrder("PO-1700", v1, new BigDecimal("1700.00"), LocalDate.of(2026, 6, 8))); // matches invoice1
         poRepo.save(new PurchaseOrder("PO-9999", v1, new BigDecimal("500.00"), LocalDate.of(2026, 6, 8)));  // mismatch case
-
+        poRepo.save(new PurchaseOrder("PO-7000", v1, new BigDecimal("7000.00"), LocalDate.of(2026, 6, 10))); // exceeds $5000 threshold
         System.out.println("Seed data loaded: " + vendorRepo.count() + " vendors, " + poRepo.count() + " POs.");
     }
 }

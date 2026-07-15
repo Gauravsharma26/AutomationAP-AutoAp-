@@ -13,18 +13,18 @@ import org.springframework.stereotype.Service;
 public class InvoiceOrchestrator {
 
     private final ExtractionAgent extractionAgent;
-    private final ValidationAgent validationAgent;
+    private final RuleBasedValidationService validationService;
     private final StubDecisionService decisionService;
     private final AuditService auditService;
 
     public InvoiceOrchestrator(
             ExtractionAgent extractionAgent,
-            ValidationAgent validationAgent,
+            RuleBasedValidationService validationService,
             StubDecisionService decisionService,
             AuditService auditService
     ) {
         this.extractionAgent = extractionAgent;
-        this.validationAgent = validationAgent;
+        this.validationService = validationService;
         this.decisionService = decisionService;
         this.auditService = auditService;
     }
@@ -53,7 +53,7 @@ public class InvoiceOrchestrator {
         }
 
         // --- Validation step (stubbed for now) ---
-        ValidationResult validationResult = validationAgent.validate(invoiceData);
+        ValidationResult validationResult = validationService.validate(invoiceData);
         invoiceCase.setValidationResult(validationResult);
 
         // --- Decision step (stubbed for now) ---

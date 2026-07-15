@@ -1,5 +1,6 @@
 package com.gaurav.autoap.tool;
 
+import com.gaurav.autoap.config.PolicyConfig;
 import com.gaurav.autoap.model.PurchaseOrder;
 import com.gaurav.autoap.repository.PurchaseOrderRepository;
 import com.gaurav.autoap.repository.VendorRepository;
@@ -11,11 +12,12 @@ public class InvoiceTools {
 
     private final PurchaseOrderRepository poRepository;
     private final VendorRepository vendorRepository;
+    private final PolicyConfig policyConfig;
 
-
-    public InvoiceTools(PurchaseOrderRepository poRepository, VendorRepository vendorRepository) {
+    public InvoiceTools(PurchaseOrderRepository poRepository, VendorRepository vendorRepository,PolicyConfig policyConfig) {
         this.poRepository = poRepository;
         this.vendorRepository = vendorRepository;
+        this.policyConfig=policyConfig;
     }
 
     @Tool("Check whether a vendor with the given name exists in the system")
@@ -41,7 +43,13 @@ public class InvoiceTools {
                 .map(PurchaseOrder::getPoNumber)
                 .orElse("NOT_FOUND");
     }
-
+    @Tool("Check whether an invoice amount exceeds the company's approval threshold and requires manager sign-off. Returns 'REQUIRES_APPROVAL' or 'WITHIN_LIMIT'.")
+    public String checkApprovalThreshold(double amount) {
+        if (amount > policyConfig.getApprovalThreshold().doubleValue()) {
+            return "REQUIRES_APPROVAL";
+        }
+        return "WITHIN_LIMIT";
+    }
 
 
 }

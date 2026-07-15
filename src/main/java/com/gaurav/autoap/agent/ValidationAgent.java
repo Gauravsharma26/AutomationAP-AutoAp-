@@ -5,52 +5,48 @@ import com.gaurav.autoap.model.ValidationResult;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
+// EXPLORATION NOTE: This LLM tool-calling approach was tested extensively across
+// 7 distinct prompt strategies (rule tables, chain-of-thought restating, format
+// constraints, structured reasoning fields, simplified step-gating) and 2 different
+// models (Llama 3.2:3b, Qwen2.5:3b). Each fix resolved one failing test case while
+// introducing a regression in a previously-correct case - a repeatable pattern
+// indicating a genuine reliability ceiling for 3-4B models on multi-fact numeric
+// synthesis, not a prompting gap. Production validation logic uses
+// RuleBasedValidationService (deterministic Java) instead. Retained here to
+// demonstrate agentic tool-calling design and the evaluation process behind
+// this architectural decision.
+
 public interface ValidationAgent {
 
     @SystemMessage("""
-        You are a finance validation assistant. You are given extracted invoice data.
+        Call vendorExists once. Call findMatchingPurchaseOrderForVendor once. 
+        Call checkApprovalThreshold once. Call each tool exactly one time, then 
+        stop calling tools and answer immediately.
 
-        You MUST call both of these tools before answering:
-        1. vendorExists(vendorName) - returns true or false.
-        2. findMatchingPurchaseOrderForVendor(vendorName, amount) - returns a PO number 
-           if found, or "NOT_FOUND" if no matching purchase order exists.
+        Then follow these steps in order:
 
-        After calling both tools, first restate their exact results to yourself, then 
-        apply the rule table below EXACTLY to decide the output. Do not reason about 
-        the invoice data directly - only use the two tool results to decide.
+        Step 1: If vendorExists is false, set poMatch to false and issues to 
+        ["Vendor not found in system"]. Stop here, skip Step 2.
 
-        Rule table (this covers every possible case - match it exactly):
+        Step 2: If vendorExists is true, check findMatchingPurchaseOrderForVendor. 
+        If it is NOT_FOUND, set poMatch to false and issues to ["No matching 
+        purchase order for this amount"]. If it found a PO number, set poMatch 
+        to true and issues to an empty list.
+        Only set poMatch to true if findMatchingPurchaseOrderForVendor returned an actual\s
+        PO number and not the text NOT_FOUND. If it returned NOT_FOUND for any reason,\s
+        poMatch must be false, even if vendorExists is true.
 
-        | vendorExists | PO tool result | poMatch | issues                                              |
-        |--------------|----------------|---------|------------------------------------------------------|
-        | false        | NOT_FOUND      | false   | ["Vendor not found in system"]                        |
-        | false        | (any PO found) | false   | ["Vendor not found in system"]                        |
-        | true         | NOT_FOUND      | false   | ["No matching purchase order for this amount"]        |
-        | true         | (a PO found)   | true    | []                                                    |
+        Step 3: If checkApprovalThreshold is REQUIRES_APPROVAL, add "Amount 
+        exceeds approval threshold - requires manager sign-off" to the issues 
+        list from Step 1 or 2. If it is WITHIN_LIMIT, do not change issues.
 
-        Critical rules:
-        - If vendorExists is true, NEVER include "Vendor not found in system" in issues, 
-          regardless of the PO tool result.
-        - If vendorExists is false, ALWAYS include "Vendor not found in system", and do 
-          not also add a separate PO-related issue - the vendor issue is sufficient.
-        - poMatch is true only when vendorExists is true AND the PO tool found a match.
+        Set duplicate to false always.
 
-        duplicate: always set this to false (duplicate checking is not yet implemented).
+        Answer with only this JSON object, nothing else:
+        {"poMatch": true or false, "duplicate": false, "issues": [...]}
 
-        Example 1:
-        Tool results: vendorExists=true, findMatchingPurchaseOrderForVendor="PO-1700"
-        Correct output: {"poMatch": true, "duplicate": false, "issues": []}
-
-        Example 2:
-        Tool results: vendorExists=true, findMatchingPurchaseOrderForVendor="NOT_FOUND"
-        Correct output: {"poMatch": false, "duplicate": false, "issues": ["No matching purchase order for this amount"]}
-
-        Example 3:
-        Tool results: vendorExists=false, findMatchingPurchaseOrderForVendor="NOT_FOUND"
-        Correct output: {"poMatch": false, "duplicate": false, "issues": ["Vendor not found in system"]}
-
-        Now process the given invoice data by calling both tools, comparing the results 
-        to the rule table above, and returning the matching output exactly.
+        Example: {"poMatch": true, "duplicate": false, "issues": []}
+        Example: {"poMatch": false, "duplicate": false, "issues": ["Vendor not found in system"]}
         """)
     ValidationResult validate(@UserMessage InvoiceData invoiceData);
 }

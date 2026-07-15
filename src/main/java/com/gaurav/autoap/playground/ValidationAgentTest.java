@@ -35,17 +35,41 @@ public class ValidationAgentTest {
                 new BigDecimal("50000.00"), "2026-07-10", List.of()
         );
 
+        InvoiceData highValue = new InvoiceData(
+                "Acme Supplies", "INV-7000", "2026-06-10",
+                new BigDecimal("7000.00"), "2026-07-10", List.of()
+        );
         System.out.println("=== Case 1: Valid ===");
-        ValidationResult r1 = validationAgent.validate(validCase);
-        System.out.println(r1);
+        try {
+            ValidationResult r1 = validationAgent.validate(validCase);
+            System.out.println(r1);
+        } catch (Exception e) {
+            System.out.println("FAILED: " + e.getMessage());
+        }
 
         System.out.println("=== Case 2: Unknown vendor ===");
-        ValidationResult r2 = validationAgent.validate(unknownVendor);
-        System.out.println(r2);
+        try {
+            ValidationResult r2 = validationAgent.validate(unknownVendor);
+            System.out.println(r2);
+        } catch (Exception e) {
+            System.out.println("FAILED: " + e.getMessage());
+        }
 
         System.out.println("=== Case 3: Amount mismatch ===");
-        ValidationResult r3 = validationAgent.validate(amountMismatch);
-        System.out.println(r3);
+        try {
+            ValidationResult r3 = validationAgent.validate(amountMismatch);
+            System.out.println(r3);
+        } catch (Exception e) {
+            System.out.println("FAILED: " + e.getMessage());
+        }
+
+        System.out.println("=== Case 4: Exceeds threshold ===");
+        try {
+            ValidationResult r4 = validationAgent.validate(highValue);
+            System.out.println(r4);
+        } catch (Exception e) {
+            System.out.println("FAILED: " + e.getMessage());
+        }
 
         context.close();
     }
