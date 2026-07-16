@@ -14,19 +14,19 @@ public class InvoiceOrchestrator {
 
     private final ExtractionAgent extractionAgent;
     private final RuleBasedValidationService validationService;
-    private final StubDecisionService decisionService;
     private final AuditService auditService;
+    private final RuleBasedDecisionService decisionService;
 
     public InvoiceOrchestrator(
             ExtractionAgent extractionAgent,
             RuleBasedValidationService validationService,
-            StubDecisionService decisionService,
-            AuditService auditService
+            AuditService auditService,
+            RuleBasedDecisionService decisionService
     ) {
         this.extractionAgent = extractionAgent;
         this.validationService = validationService;
-        this.decisionService = decisionService;
         this.auditService = auditService;
+        this.decisionService=decisionService;
     }
 
     public InvoiceCase processInvoice(String rawText) {
