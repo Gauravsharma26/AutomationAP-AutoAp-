@@ -1,5 +1,6 @@
 package com.gaurav.autoap.config;
 
+import com.gaurav.autoap.agent.CommunicationAgent;
 import com.gaurav.autoap.agent.ExplanationAgent;
 import com.gaurav.autoap.agent.ExtractionAgent;
 import com.gaurav.autoap.agent.ValidationAgent;
@@ -33,5 +34,9 @@ public class LLMConfig {
     @Bean
     public ExplanationAgent explanationAgent(ChatLanguageModel chatLanguageModel) {
         return AiServices.create(ExplanationAgent.class, chatLanguageModel);
+    }
+    @Bean
+    public CommunicationAgent communicationAgent(ChatLanguageModel chatLanguageModel) {
+        return AiServices.create(CommunicationAgent.class, chatLanguageModel);
     }
 }

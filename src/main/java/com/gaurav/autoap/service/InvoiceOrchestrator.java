@@ -1,6 +1,7 @@
 package com.gaurav.autoap.service;
 
 
+import com.gaurav.autoap.agent.CommunicationAgent;
 import com.gaurav.autoap.agent.ExtractionAgent;
 import com.gaurav.autoap.agent.ValidationAgent;
 import com.gaurav.autoap.model.*;
@@ -16,17 +17,20 @@ public class InvoiceOrchestrator {
     private final RuleBasedValidationService validationService;
     private final AuditService auditService;
     private final RuleBasedDecisionService decisionService;
+    private final CommunicationAgent communicationAgent;
 
     public InvoiceOrchestrator(
             ExtractionAgent extractionAgent,
             RuleBasedValidationService validationService,
             AuditService auditService,
-            RuleBasedDecisionService decisionService
+            RuleBasedDecisionService decisionService,
+             CommunicationAgent communicationAgent
     ) {
         this.extractionAgent = extractionAgent;
         this.validationService = validationService;
         this.auditService = auditService;
         this.decisionService=decisionService;
+        this.communicationAgent=communicationAgent;
     }
 
     public InvoiceCase processInvoice(String rawText) {
@@ -62,7 +66,17 @@ public class InvoiceOrchestrator {
 
         // --- Communication step (skipped today - Day 9) ---
         if (decision.status() != DecisionStatus.APPROVE) {
-            invoiceCase.setEmailDraft("(Email drafting not yet implemented - placeholder)");
+            String summary = String.format(
+                    "Vendor: %s. Invoice Number: %s. Amount: %s. Status: %s. Reason: %s.",
+                    invoiceData.vendorName(), invoiceData.invoiceNumber(), invoiceData.amount(),
+                    decision.status(), decision.reason()
+            );
+            try {
+                Email email = communicationAgent.draftEmail(summary);
+                invoiceCase.setEmailDraft(email.subject() + "\n\n" + email.body());
+            } catch (Exception e) {
+                invoiceCase.setEmailDraft("Email generation failed: " + e.getMessage() + " - manual email required");
+            }
         }
 
         // --- Audit step (real, always runs) ---
@@ -79,4 +93,6 @@ public class InvoiceOrchestrator {
             return ExtractionOutcome.failed(e.getMessage());
         }
     }
+
+
 }
