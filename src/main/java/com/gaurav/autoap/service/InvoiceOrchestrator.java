@@ -5,10 +5,14 @@ import com.gaurav.autoap.agent.CommunicationAgent;
 import com.gaurav.autoap.agent.ExtractionAgent;
 import com.gaurav.autoap.agent.ValidationAgent;
 import com.gaurav.autoap.model.*;
+import com.gaurav.autoap.repository.InvoiceRepository;
 import com.gaurav.autoap.service.AuditService;
 import com.gaurav.autoap.service.StubDecisionService;
 import com.gaurav.autoap.service.StubValidationService;
+import com.gaurav.autoap.utility.DateParsingUtil;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 public class InvoiceOrchestrator {
@@ -18,19 +22,22 @@ public class InvoiceOrchestrator {
     private final AuditService auditService;
     private final RuleBasedDecisionService decisionService;
     private final CommunicationAgent communicationAgent;
+    private final InvoiceRepository invoiceRepository;
 
     public InvoiceOrchestrator(
             ExtractionAgent extractionAgent,
             RuleBasedValidationService validationService,
             AuditService auditService,
             RuleBasedDecisionService decisionService,
-             CommunicationAgent communicationAgent
+             CommunicationAgent communicationAgent,
+            InvoiceRepository invoiceRepository
     ) {
         this.extractionAgent = extractionAgent;
         this.validationService = validationService;
         this.auditService = auditService;
         this.decisionService=decisionService;
         this.communicationAgent=communicationAgent;
+        this.invoiceRepository=invoiceRepository;
     }
 
     public InvoiceCase processInvoice(String rawText) {
@@ -79,9 +86,30 @@ public class InvoiceOrchestrator {
             }
         }
 
-        // --- Audit step (real, always runs) ---
-        auditService.log(null, decision.status().toString(), decision.reason());
+        Invoice invoiceEntity = new Invoice();
+        invoiceEntity.setInvoiceNumber(invoiceData.invoiceNumber());
+        invoiceEntity.setVendorName(invoiceData.vendorName());
+        invoiceEntity.setAmount(invoiceData.amount());
+        invoiceEntity.setStatus(decision.status().toString());
+        invoiceEntity.setReason(decision.reason());
+        invoiceEntity.setEmailDraft(invoiceCase.getEmailDraft());
+        invoiceEntity.setIssuesJson(String.join("; ", validationResult.issues()));
+        invoiceEntity.setProcessedAt(LocalDateTime.now());
 
+        try {
+            if (invoiceData.invoiceDate() != null) {
+                invoiceEntity.setInvoiceDate(DateParsingUtil.parseFlexible(invoiceData.invoiceDate()));
+            }
+            if (invoiceData.dueDate() != null) {
+                invoiceEntity.setDueDate(DateParsingUtil.parseFlexible(invoiceData.dueDate()));
+            }
+        } catch (Exception ignored) {
+            // dates optional for dashboard display, don't block saving the record
+        }
+
+        Invoice savedInvoice = invoiceRepository.save(invoiceEntity);
+
+        auditService.log(savedInvoice.getId(), decision.status().toString(), decision.reason());
         return invoiceCase;
     }
 
