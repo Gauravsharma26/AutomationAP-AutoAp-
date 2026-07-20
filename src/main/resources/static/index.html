@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoAP — Invoice Processing Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --bg: #F7F8FA;
+          --surface: #FFFFFF;
+          --border: #E5E7EB;
+          --text: #1A1D29;
+          --text-muted: #6B7280;
+          --accent: #1F6F4A;
+          --accent-soft: #E6F2EC;
+          --approve: #16A34A;
+          --approve-soft: #DCFCE7;
+          --escalate: #D97706;
+          --escalate-soft: #FEF3C7;
+          --reject: #DC2626;
+          --reject-soft: #FEE2E2;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+          margin: 0;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
+          -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 24px 40px;
+          background: var(--surface);
+          border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .brand-mark {
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          background: var(--accent);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 700;
+          font-size: 15px;
+        }
+
+        .brand-name {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 600;
+          font-size: 18px;
+          letter-spacing: -0.01em;
+        }
+
+        .brand-sub {
+          color: var(--text-muted);
+          font-size: 13px;
+          margin-top: -2px;
+        }
+
+        main {
+          max-width: 1120px;
+          margin: 0 auto;
+          padding: 32px 40px 80px;
+        }
+
+        .stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 32px;
+        }
+
+        .stat-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 20px 22px;
+        }
+
+        .stat-label {
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: var(--text-muted);
+          margin-bottom: 8px;
+        }
+
+        .stat-value {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 30px;
+          font-weight: 600;
+          letter-spacing: -0.02em;
+        }
+
+        .stat-card.approve .stat-value { color: var(--approve); }
+        .stat-card.escalate .stat-value { color: var(--escalate); }
+        .stat-card.reject .stat-value { color: var(--reject); }
+
+        .panel {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          margin-bottom: 24px;
+          overflow: hidden;
+        }
+
+        .panel-header {
+          padding: 18px 22px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .panel-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 600;
+          font-size: 15px;
+        }
+
+        .upload-zone {
+          margin: 20px;
+          border: 2px dashed var(--border);
+          border-radius: 10px;
+          padding: 32px;
+          text-align: center;
+          cursor: pointer;
+          transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .upload-zone:hover, .upload-zone.drag {
+          border-color: var(--accent);
+          background: var(--accent-soft);
+        }
+
+        .upload-zone p {
+          margin: 0;
+          color: var(--text-muted);
+          font-size: 14px;
+        }
+
+        .upload-zone .upload-cta {
+          color: var(--accent);
+          font-weight: 600;
+        }
+
+        #fileInput { display: none; }
+
+        .upload-status {
+          padding: 0 20px 16px;
+          font-size: 13px;
+          color: var(--text-muted);
+          min-height: 18px;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        thead th {
+          text-align: left;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--text-muted);
+          padding: 12px 22px;
+          border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr {
+          border-left: 4px solid transparent;
+          border-bottom: 1px solid var(--border);
+          cursor: pointer;
+          transition: background 0.1s ease;
+        }
+
+        tbody tr:hover { background: #FAFBFC; }
+        tbody tr:last-child { border-bottom: none; }
+
+        tbody tr.APPROVE { border-left-color: var(--approve); }
+        tbody tr.ESCALATE { border-left-color: var(--escalate); }
+        tbody tr.REJECT { border-left-color: var(--reject); }
+
+        td {
+          padding: 14px 22px;
+          font-size: 14px;
+        }
+
+        td.vendor { font-weight: 500; }
+        td.amount { font-family: 'Space Grotesk', sans-serif; font-weight: 600; }
+
+        .badge {
+          display: inline-block;
+          padding: 3px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .badge.APPROVE { background: var(--approve-soft); color: var(--approve); }
+        .badge.ESCALATE { background: var(--escalate-soft); color: var(--escalate); }
+        .badge.REJECT { background: var(--reject-soft); color: var(--reject); }
+
+        .empty-state {
+          padding: 48px 22px;
+          text-align: center;
+          color: var(--text-muted);
+          font-size: 14px;
+        }
+
+        /* Detail slide-over */
+        .overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(26, 29, 41, 0.35);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.2s ease;
+          z-index: 10;
+        }
+
+        .overlay.open { opacity: 1; pointer-events: auto; }
+
+        .drawer {
+          position: fixed;
+          top: 0;
+          right: 0;
+          width: 420px;
+          max-width: 92vw;
+          height: 100%;
+          background: var(--surface);
+          box-shadow: -8px 0 24px rgba(0,0,0,0.08);
+          transform: translateX(100%);
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 11;
+          overflow-y: auto;
+        }
+
+        .drawer.open { transform: translateX(0); }
+
+        .drawer-header {
+          padding: 22px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+        }
+
+        .drawer-header h2 {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 17px;
+          margin: 0 0 4px;
+        }
+
+        .drawer-close {
+          background: none;
+          border: none;
+          font-size: 20px;
+          cursor: pointer;
+          color: var(--text-muted);
+          line-height: 1;
+          padding: 4px;
+        }
+
+        .drawer-body { padding: 22px; }
+
+        .detail-row {
+          margin-bottom: 18px;
+        }
+
+        .detail-label {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--text-muted);
+          margin-bottom: 4px;
+        }
+
+        .detail-value {
+          font-size: 14px;
+          line-height: 1.5;
+          white-space: pre-wrap;
+        }
+
+        .filter-bar {
+          display: flex;
+          gap: 8px;
+          padding: 14px 22px;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .filter-btn {
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--text-muted);
+          font-size: 13px;
+          font-weight: 500;
+          padding: 6px 14px;
+          border-radius: 999px;
+          cursor: pointer;
+          transition: all 0.12s ease;
+        }
+
+        .filter-btn.active {
+          background: var(--text);
+          color: white;
+          border-color: var(--text);
+        }
+
+        @media (max-width: 720px) {
+          .stats { grid-template-columns: repeat(2, 1fr); }
+          main { padding: 24px 16px 60px; }
+          header { padding: 18px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <div class="brand-mark">AP</div>
+        <div>
+            <div class="brand-name">AutoAP</div>
+            <div class="brand-sub">Invoice processing</div>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <div class="stat-label">Total processed</div>
+            <div class="stat-value" id="statTotal">—</div>
+        </div>
+        <div class="stat-card approve">
+            <div class="stat-label">Approved</div>
+            <div class="stat-value" id="statApprove">—</div>
+        </div>
+        <div class="stat-card escalate">
+            <div class="stat-label">Escalated</div>
+            <div class="stat-value" id="statEscalate">—</div>
+        </div>
+        <div class="stat-card reject">
+            <div class="stat-label">Rejected</div>
+            <div class="stat-value" id="statReject">—</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Upload an invoice</div>
+        </div>
+        <div class="upload-zone" id="uploadZone">
+            <p><span class="upload-cta">Choose a PDF</span> or drag it here</p>
+        </div>
+        <input type="file" id="fileInput" accept="application/pdf">
+        <div class="upload-status" id="uploadStatus"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">Processed invoices</div>
+        </div>
+        <div class="filter-bar" id="filterBar">
+            <button class="filter-btn active" data-filter="ALL">All</button>
+            <button class="filter-btn" data-filter="APPROVE">Approved</button>
+            <button class="filter-btn" data-filter="ESCALATE">Escalated</button>
+            <button class="filter-btn" data-filter="REJECT">Rejected</button>
+        </div>
+        <table>
+            <thead>
+            <tr>
+                <th>Vendor</th>
+                <th>Invoice #</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Processed</th>
+            </tr>
+            </thead>
+            <tbody id="invoiceTableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" style="display:none;">
+            No invoices processed yet — upload one above to get started.
+        </div>
+    </div>
+</main>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <div>
+            <h2 id="drawerTitle">Invoice detail</h2>
+            <div class="stat-sub" id="drawerBadge"></div>
+        </div>
+        <button class="drawer-close" id="drawerClose">&times;</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script>
+    const API_BASE = '/api/invoices';
+    let currentFilter = 'ALL';
+    let allInvoices = [];
+
+    async function loadStats() {
+      const res = await fetch(`${API_BASE}/stats`);
+      const stats = await res.json();
+      document.getElementById('statTotal').textContent = stats.total;
+      document.getElementById('statApprove').textContent = stats.approved;
+      document.getElementById('statEscalate').textContent = stats.escalated;
+      document.getElementById('statReject').textContent = stats.rejected;
+    }
+
+    async function loadInvoices() {
+      const res = await fetch(API_BASE);
+      allInvoices = await res.json();
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('invoiceTableBody');
+      const emptyState = document.getElementById('emptyState');
+      const filtered = currentFilter === 'ALL'
+        ? allInvoices
+        : allInvoices.filter(inv => inv.status === currentFilter);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+
+      tbody.innerHTML = filtered.map(inv => `
+        <tr class="${inv.status}" onclick="openDetail(${inv.id})">
+          <td class="vendor">${escapeHtml(inv.vendorName || 'Unknown')}</td>
+          <td>${escapeHtml(inv.invoiceNumber || '—')}</td>
+          <td class="amount">$${Number(inv.amount || 0).toFixed(2)}</td>
+          <td><span class="badge ${inv.status}">${inv.status}</span></td>
+          <td>${formatDate(inv.processedAt)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function openDetail(id) {
+      const inv = allInvoices.find(i => i.id === id);
+      if (!inv) return;
+
+      document.getElementById('drawerTitle').textContent = inv.invoiceNumber || 'Invoice detail';
+      document.getElementById('drawerBadge').innerHTML = `<span class="badge ${inv.status}">${inv.status}</span>`;
+
+      document.getElementById('drawerBody').innerHTML = `
+        <div class="detail-row">
+          <div class="detail-label">Vendor</div>
+          <div class="detail-value">${escapeHtml(inv.vendorName || 'Unknown')}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Amount</div>
+          <div class="detail-value">$${Number(inv.amount || 0).toFixed(2)}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Invoice date</div>
+          <div class="detail-value">${inv.invoiceDate || '—'}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Due date</div>
+          <div class="detail-value">${inv.dueDate || '—'}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Decision reason</div>
+          <div class="detail-value">${escapeHtml(inv.reason || '—')}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Validation issues</div>
+          <div class="detail-value">${escapeHtml(inv.issuesJson) || 'None'}</div>
+        </div>
+        ${inv.emailDraft ? `
+        <div class="detail-row">
+          <div class="detail-label">Drafted email</div>
+          <div class="detail-value">${escapeHtml(inv.emailDraft)}</div>
+        </div>` : ''}
+      `;
+
+      document.getElementById('overlay').classList.add('open');
+      document.getElementById('drawer').classList.add('open');
+    }
+
+    function closeDetail() {
+      document.getElementById('overlay').classList.remove('open');
+      document.getElementById('drawer').classList.remove('open');
+    }
+
+    document.getElementById('overlay').addEventListener('click', closeDetail);
+    document.getElementById('drawerClose').addEventListener('click', closeDetail);
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderTable();
+      });
+    });
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Upload handling
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('drag');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag');
+      if (e.dataTransfer.files.length) {
+        uploadFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) uploadFile(fileInput.files[0]);
+    });
+
+    async function uploadFile(file) {
+      uploadStatus.textContent = `Processing ${file.name}...`;
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Server returned ' + res.status);
+        const result = await res.json();
+        uploadStatus.textContent = `Done — ${result.decision?.status || 'processed'}: ${file.name}`;
+        await loadStats();
+        await loadInvoices();
+      } catch (err) {
+        uploadStatus.textContent = `Failed to process ${file.name}: ${err.message}`;
+      }
+      fileInput.value = '';
+    }
+
+    // Initial load
+    loadStats();
+    loadInvoices();
+</script>
+
+</body>
+</html>
