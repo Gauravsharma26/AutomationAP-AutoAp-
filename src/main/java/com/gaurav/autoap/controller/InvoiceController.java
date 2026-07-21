@@ -3,8 +3,10 @@ package com.gaurav.autoap.controller;
 import com.gaurav.autoap.model.Invoice;
 import com.gaurav.autoap.model.InvoiceCase;
 import com.gaurav.autoap.repository.InvoiceRepository;
+import com.gaurav.autoap.service.EmailSenderService;
 import com.gaurav.autoap.service.InvoiceOrchestrator;
 import com.gaurav.autoap.service.PdfExtractionService;
+import com.gaurav.autoap.service.ReportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +23,16 @@ public class InvoiceController {
     private final InvoiceOrchestrator orchestrator;
     private final PdfExtractionService pdfExtractionService;
     private final InvoiceRepository invoiceRepository;
+    private final ReportService reportService;
+    private final EmailSenderService emailSenderService;
 
-    public InvoiceController(InvoiceOrchestrator orchestrator, PdfExtractionService pdfExtractionService, InvoiceRepository invoiceRepository) {
+
+    public InvoiceController(InvoiceOrchestrator orchestrator, PdfExtractionService pdfExtractionService, InvoiceRepository invoiceRepository,ReportService reportService, EmailSenderService emailSenderService) {
         this.orchestrator = orchestrator;
         this.pdfExtractionService = pdfExtractionService;
         this.invoiceRepository=invoiceRepository;
+        this.reportService=reportService;
+        this.emailSenderService=emailSenderService;
     }
 
     @PostMapping
@@ -77,4 +84,17 @@ public class InvoiceController {
                     "rejected", rejected
             ));
         }
+
+
+    @PostMapping("/send-report")
+    public ResponseEntity<?> sendReport() {
+        try {
+            String report = reportService.generateSummaryReport();
+            emailSenderService.sendReport(report);
+            return ResponseEntity.ok(Map.of("status", "sent", "report", report));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to send report: " + e.getMessage());
+        }
+    }
 }
