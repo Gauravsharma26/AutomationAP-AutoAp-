@@ -136,6 +136,23 @@
           font-size: 15px;
         }
 
+        .refresh-btn {
+          border: 1px solid var(--border);
+          background: var(--surface);
+          padding: 6px 14px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-family: 'Inter', sans-serif;
+          cursor: pointer;
+          color: var(--text-muted);
+          transition: all 0.12s ease;
+        }
+
+        .refresh-btn:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+
         .upload-zone {
           margin: 20px;
           border: 2px dashed var(--border);
@@ -143,12 +160,17 @@
           padding: 32px;
           text-align: center;
           cursor: pointer;
-          transition: border-color 0.15s ease, background 0.15s ease;
+          transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
         }
 
         .upload-zone:hover, .upload-zone.drag {
           border-color: var(--accent);
           background: var(--accent-soft);
+        }
+
+        .upload-zone.processing {
+          pointer-events: none;
+          opacity: 0.6;
         }
 
         .upload-zone p {
@@ -169,6 +191,45 @@
           font-size: 13px;
           color: var(--text-muted);
           min-height: 18px;
+          display: flex;
+          align-items: center;
+        }
+
+        .spinner {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+          border: 2px solid var(--border);
+          border-top-color: var(--accent);
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          margin-right: 8px;
+          flex-shrink: 0;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .search-bar {
+          padding: 14px 22px 0;
+        }
+
+        .search-bar input {
+          width: 100%;
+          padding: 9px 12px;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          font-size: 14px;
+          font-family: 'Inter', sans-serif;
+          color: var(--text);
+          background: var(--bg);
+        }
+
+        .search-bar input:focus {
+          outline: none;
+          border-color: var(--accent);
+          background: var(--surface);
         }
 
         table {
@@ -184,6 +245,16 @@
           color: var(--text-muted);
           padding: 12px 22px;
           border-bottom: 1px solid var(--border);
+          cursor: pointer;
+          user-select: none;
+        }
+
+        thead th:hover { color: var(--text); }
+
+        thead th .sort-icon {
+          display: inline-block;
+          width: 10px;
+          font-size: 10px;
         }
 
         tbody tr {
@@ -379,6 +450,7 @@
     <div class="panel">
         <div class="panel-header">
             <div class="panel-title">Processed invoices</div>
+            <button class="refresh-btn" id="refreshBtn">Refresh</button>
         </div>
         <div class="filter-bar" id="filterBar">
             <button class="filter-btn active" data-filter="ALL">All</button>
@@ -386,14 +458,17 @@
             <button class="filter-btn" data-filter="ESCALATE">Escalated</button>
             <button class="filter-btn" data-filter="REJECT">Rejected</button>
         </div>
+        <div class="search-bar">
+            <input type="text" id="searchBox" placeholder="Search by vendor or invoice number...">
+        </div>
         <table>
             <thead>
             <tr>
-                <th>Vendor</th>
-                <th>Invoice #</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Processed</th>
+                <th data-sort="vendorName">Vendor <span class="sort-icon" id="sortIcon-vendorName"></span></th>
+                <th data-sort="invoiceNumber">Invoice # <span class="sort-icon" id="sortIcon-invoiceNumber"></span></th>
+                <th data-sort="amount">Amount <span class="sort-icon" id="sortIcon-amount"></span></th>
+                <th data-sort="status">Status <span class="sort-icon" id="sortIcon-status"></span></th>
+                <th data-sort="processedAt">Processed <span class="sort-icon" id="sortIcon-processedAt"></span></th>
             </tr>
             </thead>
             <tbody id="invoiceTableBody"></tbody>
@@ -420,6 +495,8 @@
     const API_BASE = '/api/invoices';
     let currentFilter = 'ALL';
     let allInvoices = [];
+    let sortField = 'processedAt';
+    let sortDirection = 'desc';
 
     async function loadStats() {
       const res = await fetch(`${API_BASE}/stats`);
@@ -439,13 +516,37 @@
     function renderTable() {
       const tbody = document.getElementById('invoiceTableBody');
       const emptyState = document.getElementById('emptyState');
-      const filtered = currentFilter === 'ALL'
+      const searchTerm = document.getElementById('searchBox').value.toLowerCase().trim();
+
+      let filtered = currentFilter === 'ALL'
         ? allInvoices
         : allInvoices.filter(inv => inv.status === currentFilter);
+
+      if (searchTerm) {
+        filtered = filtered.filter(inv =>
+          (inv.vendorName || '').toLowerCase().includes(searchTerm) ||
+          (inv.invoiceNumber || '').toLowerCase().includes(searchTerm)
+        );
+      }
+
+      filtered = [...filtered].sort((a, b) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+        if (valA == null) valA = '';
+        if (valB == null) valB = '';
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
 
       if (filtered.length === 0) {
         tbody.innerHTML = '';
         emptyState.style.display = 'block';
+        emptyState.textContent = (searchTerm || currentFilter !== 'ALL')
+          ? 'No invoices match your search or filter.'
+          : 'No invoices processed yet — upload one above to get started.';
         return;
       }
       emptyState.style.display = 'none';
@@ -521,6 +622,28 @@
       });
     });
 
+    document.getElementById('searchBox').addEventListener('input', renderTable);
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      loadStats();
+      loadInvoices();
+    });
+
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const field = th.dataset.sort;
+        if (sortField === field) {
+          sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortField = field;
+          sortDirection = 'asc';
+        }
+        document.querySelectorAll('.sort-icon').forEach(el => el.textContent = '');
+        document.getElementById(`sortIcon-${field}`).textContent = sortDirection === 'asc' ? '↑' : '↓';
+        renderTable();
+      });
+    });
+
     function formatDate(iso) {
       if (!iso) return '—';
       const d = new Date(iso);
@@ -559,7 +682,9 @@
     });
 
     async function uploadFile(file) {
-      uploadStatus.textContent = `Processing ${file.name}...`;
+      uploadZone.classList.add('processing');
+      uploadStatus.innerHTML = `<span class="spinner"></span>Processing ${escapeHtml(file.name)}... this can take up to 15 seconds`;
+
       const formData = new FormData();
       formData.append('file', file);
 
@@ -572,6 +697,8 @@
         await loadInvoices();
       } catch (err) {
         uploadStatus.textContent = `Failed to process ${file.name}: ${err.message}`;
+      } finally {
+        uploadZone.classList.remove('processing');
       }
       fileInput.value = '';
     }

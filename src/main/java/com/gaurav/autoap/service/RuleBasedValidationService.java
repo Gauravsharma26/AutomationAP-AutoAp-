@@ -3,6 +3,7 @@ package com.gaurav.autoap.service;
 import com.gaurav.autoap.config.PolicyConfig;
 import com.gaurav.autoap.model.InvoiceData;
 import com.gaurav.autoap.model.ValidationResult;
+import com.gaurav.autoap.repository.InvoiceRepository;
 import com.gaurav.autoap.repository.PurchaseOrderRepository;
 import com.gaurav.autoap.repository.VendorRepository;
 import org.springframework.stereotype.Service;
@@ -16,13 +17,16 @@ public class RuleBasedValidationService {
     private final VendorRepository vendorRepository;
     private final PurchaseOrderRepository poRepository;
     private final PolicyConfig policyConfig;
+    private final InvoiceRepository invoiceRepository;
+
 
     public RuleBasedValidationService(VendorRepository vendorRepository,
                                       PurchaseOrderRepository poRepository,
-                                      PolicyConfig policyConfig) {
+                                      PolicyConfig policyConfig, InvoiceRepository invoiceRepository) {
         this.vendorRepository = vendorRepository;
         this.poRepository = poRepository;
         this.policyConfig = policyConfig;
+        this.invoiceRepository = invoiceRepository;
     }
 
     public ValidationResult validate(InvoiceData invoiceData) {
@@ -43,6 +47,19 @@ public class RuleBasedValidationService {
             if (!poMatch) {
                 issues.add("No matching purchase order for this amount");
             }
+        } else {
+            issues.add("Invoice amount could not be determined");
+        }
+
+        boolean duplicate = false;
+        if (invoiceData.invoiceNumber() != null && invoiceData.vendorName() != null) {
+            duplicate = !invoiceRepository
+                    .findByInvoiceNumberAndVendorName(invoiceData.invoiceNumber(), invoiceData.vendorName())
+                    .isEmpty();
+        }
+
+        if (duplicate) {
+            issues.add("Duplicate invoice - already processed previously");
         }
 
         if (invoiceData.amount() != null
@@ -50,6 +67,5 @@ public class RuleBasedValidationService {
             issues.add("Amount exceeds approval threshold - requires manager sign-off");
         }
 
-        return new ValidationResult(poMatch, false, issues);
-    }
-}
+        return new ValidationResult(poMatch, duplicate, issues);
+    }  }
