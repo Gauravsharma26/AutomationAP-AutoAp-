@@ -18,6 +18,7 @@ public class LLMConfig {
         return OllamaChatModel.builder()
                 .baseUrl("http://localhost:11434")
                 .modelName("llama3.2:3b")
+                .numPredict(512)
                 .build();
     }
     @Bean

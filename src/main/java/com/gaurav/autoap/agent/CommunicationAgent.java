@@ -28,6 +28,7 @@ public interface CommunicationAgent {
               escalated" or "requires further review", REJECT becomes "has been rejected".
 
         Return a JSON object with fields: to, subject, body.
+        Keep the email body under 80 words. Be concise and direct.
         """)
     Email draftEmail(@UserMessage String invoiceAndDecisionSummary);
 }

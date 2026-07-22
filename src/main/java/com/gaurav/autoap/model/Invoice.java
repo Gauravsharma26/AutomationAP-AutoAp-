@@ -16,7 +16,8 @@ public class Invoice {
     private String vendorName;
     private BigDecimal amount;
     private LocalDate invoiceDate;
-    private LocalDate dueDate;private String status; // APPROVE / ESCALATE / REJECT
+    private LocalDate dueDate;
+    private String status; // APPROVE / ESCALATE / REJECT
     private String reason;
 
     @Lob
@@ -26,6 +27,10 @@ public class Invoice {
     private String issuesJson;
 
     private LocalDateTime processedAt;
+
+    private String humanDecision; // PENDING / APPROVED / REJECTED / N/A
+    private String reviewerNote;
+    private LocalDateTime reviewedAt;
 
     public Invoice() {}
 
@@ -50,4 +55,29 @@ public class Invoice {
     public void setIssuesJson(String issuesJson) { this.issuesJson = issuesJson; }
     public LocalDateTime getProcessedAt() { return processedAt; }
     public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+
+
+    public String getHumanDecision() {
+        return humanDecision;
+    }
+
+    public void setHumanDecision(String humanDecision) {
+        this.humanDecision = humanDecision;
+    }
+
+    public String getReviewerNote() {
+        return reviewerNote;
+    }
+
+    public void setReviewerNote(String reviewerNote) {
+        this.reviewerNote = reviewerNote;
+    }
+
+    public LocalDateTime getReviewedAt() {
+        return reviewedAt;
+    }
+
+    public void setReviewedAt(LocalDateTime reviewedAt) {
+        this.reviewedAt = reviewedAt;
+    }
 }

@@ -95,6 +95,9 @@ public class InvoiceOrchestrator {
         invoiceEntity.setEmailDraft(invoiceCase.getEmailDraft());
         invoiceEntity.setIssuesJson(String.join("; ", validationResult.issues()));
         invoiceEntity.setProcessedAt(LocalDateTime.now());
+        invoiceEntity.setHumanDecision(
+                decision.status() == DecisionStatus.ESCALATE ? "PENDING" : "N/A"
+        );
 
         try {
             if (invoiceData.invoiceDate() != null) {
