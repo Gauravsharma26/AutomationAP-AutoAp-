@@ -1,18 +1,15 @@
 package com.gaurav.autoap.controller;
 
-import com.gaurav.autoap.model.Invoice;
-import com.gaurav.autoap.model.InvoiceCase;
+import com.gaurav.autoap.agent.QueryAnswerAgent;
+import com.gaurav.autoap.agent.QueryIntentAgent;
+import com.gaurav.autoap.model.*;
 import com.gaurav.autoap.repository.InvoiceRepository;
-import com.gaurav.autoap.service.AuditService;
-import com.gaurav.autoap.service.EmailSenderService;
-import com.gaurav.autoap.service.InvoiceOrchestrator;
-import com.gaurav.autoap.service.PdfExtractionService;
-import com.gaurav.autoap.service.ReportService;
+import com.gaurav.autoap.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.gaurav.autoap.model.ReviewRequest;
+
 import java.time.LocalDateTime;
 
 import java.util.List;
@@ -28,16 +25,23 @@ public class InvoiceController {
     private final ReportService reportService;
     private final EmailSenderService emailSenderService;
     private final AuditService auditService;
+    private final QueryIntentAgent queryIntentAgent;
+    private final QueryAnswerAgent queryAnswerAgent;
+    private final InvoiceQueryService invoiceQueryService;
 
     public InvoiceController(InvoiceOrchestrator orchestrator, PdfExtractionService pdfExtractionService,
                              InvoiceRepository invoiceRepository, ReportService reportService,
-                             EmailSenderService emailSenderService, AuditService auditService) {
+                             EmailSenderService emailSenderService, AuditService auditService, QueryIntentAgent queryIntentAgent,
+    QueryAnswerAgent queryAnswerAgent,InvoiceQueryService invoiceQueryService) {
         this.orchestrator = orchestrator;
         this.pdfExtractionService = pdfExtractionService;
         this.invoiceRepository = invoiceRepository;
         this.reportService = reportService;
         this.emailSenderService = emailSenderService;
         this.auditService = auditService;
+        this.queryIntentAgent=queryIntentAgent;
+        this.queryAnswerAgent=queryAnswerAgent;
+        this.invoiceQueryService=invoiceQueryService;
     }
 
     @PostMapping
@@ -137,5 +141,18 @@ public class InvoiceController {
                     return ResponseEntity.ok(invoice);
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+    @PostMapping("/ask")
+    public ResponseEntity<?> askQuestion(@RequestBody QuestionRequest request) {
+        try {
+            QueryIntent intent = queryIntentAgent.parseQuestion(request.question());
+            String facts = invoiceQueryService.executeQuery(intent);
+            String combined = "Question: " + request.question() + ". Facts: " + facts;
+            String answer = queryAnswerAgent.answerQuestion(combined);
+            return ResponseEntity.ok(Map.of("answer", answer));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to answer question: " + e.getMessage());
+        }
     }
 }

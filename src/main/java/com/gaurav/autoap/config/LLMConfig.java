@@ -1,9 +1,6 @@
 package com.gaurav.autoap.config;
 
-import com.gaurav.autoap.agent.CommunicationAgent;
-import com.gaurav.autoap.agent.ExplanationAgent;
-import com.gaurav.autoap.agent.ExtractionAgent;
-import com.gaurav.autoap.agent.ValidationAgent;
+import com.gaurav.autoap.agent.*;
 import com.gaurav.autoap.tool.InvoiceTools;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
@@ -40,4 +37,15 @@ public class LLMConfig {
     public CommunicationAgent communicationAgent(ChatLanguageModel chatLanguageModel) {
         return AiServices.create(CommunicationAgent.class, chatLanguageModel);
     }
+    @Bean
+    public QueryIntentAgent queryIntentAgent(ChatLanguageModel chatLanguageModel) {
+        return AiServices.create(QueryIntentAgent.class, chatLanguageModel);
+    }
+
+    @Bean
+    public QueryAnswerAgent queryAnswerAgent(ChatLanguageModel chatLanguageModel) {
+        return AiServices.create(QueryAnswerAgent.class, chatLanguageModel);
+    }
+
+
 }
