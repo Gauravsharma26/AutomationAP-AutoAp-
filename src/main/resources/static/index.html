@@ -447,6 +447,29 @@
           font-size: 13px;
           font-family: 'Inter', sans-serif;
         }
+        .qa-entry {
+  margin-bottom: 14px;
+}
+
+.qa-question {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.qa-answer {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding-left: 12px;
+  border-left: 2px solid var(--accent-soft);
+}
+
+.qa-loading {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
     </style>
 </head>
 <body>
@@ -486,6 +509,19 @@
             <div class="panel-title">Pending Review <span id="pendingCount" style="color: var(--escalate);"></span></div>
         </div>
         <div id="pendingList"></div>
+    </div>
+    <div class="panel" id="qaPanel">
+        <div class="panel-header">
+            <div class="panel-title">Ask about your invoices</div>
+        </div>
+        <div id="qaHistory" style="padding: 16px 22px; max-height: 300px; overflow-y: auto;">
+            <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">Ask a question about your invoice history to get started.</div>
+        </div>
+        <div style="display: flex; gap: 8px; padding: 0 22px 20px;">
+            <input type="text" id="qaInput" placeholder="e.g. How many invoices from Acme were escalated?"
+                   style="flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: 'Inter', sans-serif;">
+            <button id="qaAskBtn" style="border: none; background: var(--accent); color: white; padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Ask</button>
+        </div>
     </div>
     <div class="panel">
         <div class="panel-header">
@@ -819,6 +855,45 @@
       }
       setTimeout(() => { btn.disabled = false; btn.textContent = 'Send Report to Payroll'; }, 3000);
     });
+    document.getElementById('qaAskBtn').addEventListener('click', askQuestion);
+document.getElementById('qaInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') askQuestion();
+});
+
+async function askQuestion() {
+  const input = document.getElementById('qaInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const history = document.getElementById('qaHistory');
+  const entryId = 'qa-' + Date.now();
+
+  history.insertAdjacentHTML('beforeend', `
+    <div class="qa-entry" id="${entryId}">
+      <div class="qa-question">${escapeHtml(question)}</div>
+      <div class="qa-answer qa-loading">Thinking...</div>
+    </div>
+  `);
+  history.scrollTop = history.scrollHeight;
+  input.value = '';
+
+  try {
+    const res = await fetch(`${API_BASE}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question })
+    });
+    const data = await res.json();
+    const answerEl = document.querySelector(`#${entryId} .qa-answer`);
+    answerEl.classList.remove('qa-loading');
+    answerEl.textContent = data.answer || 'No answer returned.';
+  } catch (err) {
+    const answerEl = document.querySelector(`#${entryId} .qa-answer`);
+    answerEl.classList.remove('qa-loading');
+    answerEl.textContent = 'Failed to get an answer: ' + err.message;
+  }
+  history.scrollTop = history.scrollHeight;
+}
 
     // Initial load
     loadStats();
